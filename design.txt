@@ -1,0 +1,16 @@
+Title: Aircraft classifier
+Description: A module for building an aircraft classifier, where I focus on civilian airliners.
+The module builds an aircraft dataset based on the FGVAircraft dataset.
+It then builds a classifier model using transfer learning, where different
+pre-trained models can be loaded.
+
+Objects: AircraftData(Dataset):
+
+             init
+         AircraftDataSubset():
+            subset of AircraftData
+         AircraftModel(nn.Module):
+            init
+            forward
+
+
