@@ -1,3 +1,6 @@
+# reduced set for testing purposes.
+TEST = ["A380", "Boeing 747", "DC-8"]
+
 CIVILIAN_JET_AIRLINERS = [
     "A300",
     "A310",

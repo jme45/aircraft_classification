@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 from torchvision.transforms import v2 as transf_v2
 from typing import Optional, Callable
 
-import aircraft_types as ac
+import aircraft_types as act
 
 simple_transf = transf_v2.Compose(
     [
@@ -96,7 +96,7 @@ def get_aircraft_data_subset(
     transform: Optional[Callable] = None,
     target_transform: Optional[Callable] = None,
     download: bool = True,
-    aircraft_types: list[str] = ac.ALL_AIRCRAFT,
+    aircraft_types: list[str] = act.ALL_AIRCRAFT,
 ) -> AircraftData:
     """
     Load an AircraftData dataset and take the subset which only contain aircraft
@@ -115,8 +115,8 @@ def get_aircraft_data_subset(
     """
     # sort aircraft_types and check that then get same order as in original classes
     aircraft_types = sorted(aircraft_types)
-    assert set(aircraft_types).issubset(set(ac.ALL_AIRCRAFT))
-    aircraft_reduced = [a for a in ac.ALL_AIRCRAFT if a in aircraft_types]
+    assert set(aircraft_types).issubset(set(act.ALL_AIRCRAFT))
+    aircraft_reduced = [a for a in act.ALL_AIRCRAFT if a in aircraft_types]
     assert list(aircraft_reduced) == list(
         aircraft_types
     ), "Order doesn't match. Should not happen"
@@ -125,7 +125,7 @@ def get_aircraft_data_subset(
     # Later check that all aircraft in AircraftData matches ac.ALL_AIRCRAFT.
     idxs_aircraft_types = [
         i
-        for i, aircr_type in enumerate(ac.ALL_AIRCRAFT)
+        for i, aircr_type in enumerate(act.ALL_AIRCRAFT)
         if aircr_type in aircraft_types
     ]
 
@@ -138,6 +138,7 @@ def get_aircraft_data_subset(
 
     # Obtain new_target_transform. Need to compose if existing target_transform is not None.
     if target_transform is None:
+        # FIXME: Something is wrong with transform. put proper transform back again transf_v2.Compose([transf_v2.Identity()])#
         new_target_transform = transf_v2.Compose([_map_old_classes_to_new])
     else:
         new_target_transform = transf_v2.Compose(
@@ -151,7 +152,7 @@ def get_aircraft_data_subset(
     )
     # Now check that the aircraft types in aircraft_data_all matches ac.ALL_AIRCRAFT.
     # If not, the _map_old_classes_to_new will not work correctly.
-    assert list(ac.ALL_AIRCRAFT) == list(
+    assert list(act.ALL_AIRCRAFT) == list(
         aircraft_data_all.classes
     ), "ac.ALL_AIRCRAFT doesn't match classes in aircraft_data_all"
 

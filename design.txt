@@ -7,10 +7,10 @@ pre-trained models can be loaded.
 Objects: AircraftData(Dataset):
 
              init
-         AircraftDataSubset():
-            subset of AircraftData
-         AircraftModel(nn.Module):
+         AircraftClassifier(nn.Module):
             init
-            forward
+                self.model
+                self.transform
+            predict()
 
 
