@@ -1,13 +1,14 @@
-from typing import Optional, Tuple, Any
+import logging
+from collections import OrderedDict
 from pathlib import Path
-from torch import nn
+from timeit import default_timer as timer
+from typing import Optional, Tuple, Any
+
 import torch
 import torchvision
-from collections import OrderedDict
-from timeit import default_timer as timer
-from torchvision.transforms import v2 as transf_v2
-import logging
 from PIL import Image
+from torch import nn
+from torchvision.transforms import v2 as transf_v2
 
 
 class TrivialClassifier(nn.Module):

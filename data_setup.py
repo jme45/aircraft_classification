@@ -1,15 +1,12 @@
-import torchvision
-
 from pathlib import Path
-from tqdm.auto import tqdm
+from typing import Optional, Callable
+
+import numpy as np
 import torch
 import torchvision
-import numpy as np
 from torch.utils.data import Dataset, DataLoader
-from pathlib import Path
-from tqdm.auto import tqdm
 from torchvision.transforms import v2 as transf_v2
-from typing import Optional, Callable
+from tqdm.auto import tqdm
 
 import aircraft_types as act
 
