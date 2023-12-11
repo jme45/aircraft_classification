@@ -1,2 +1,6 @@
 data/
 .idea/
+*.ipynb
+runs/
+.DS_store
+__pycache__

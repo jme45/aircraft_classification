@@ -16,9 +16,10 @@ class TrivialClassifier(nn.Module):
     """
 
     image_size = 8
+    n_colour_channels = 3
     transforms = transf_v2.Compose(
         [
-            transf_v2.Resize((image_size, image_size)),
+            transf_v2.Resize((image_size, image_size), antialias=True),
             transf_v2.ToImage(),
             transf_v2.ToDtype(torch.float32, scale=True),
         ]
@@ -28,7 +29,8 @@ class TrivialClassifier(nn.Module):
         super().__init__()
         # After flattening, input will have size self.image_size**2.
         self.layers = nn.Sequential(
-            nn.Flatten(), nn.Linear(self.image_size**2, num_classes)
+            nn.Flatten(),
+            nn.Linear(self.image_size**2 * self.n_colour_channels, num_classes),
         )
 
     def forward(self, x):
@@ -47,6 +49,13 @@ class AircraftClassifier:
         load_classifier_pretrained_weights: bool,
         classifier_pretrained_weights_file: Optional[str | Path] = None,
     ):
+        """
+
+        :param model_type: "vit_b_16", "vit_l_16", "effnet_b2", "effnet_b7"
+        :param class_names:
+        :param load_classifier_pretrained_weights: whether to load classifier
+        :param classifier_pretrained_weights_file: file for classifier data
+        """
         self.class_names = class_names
         self.classifier_pretrained_weights_file = classifier_pretrained_weights_file
         self.load_classifier_pretrained_weights = load_classifier_pretrained_weights
@@ -71,28 +80,52 @@ class AircraftClassifier:
         # Obtain model and set weights.
         self._get_model_and_transform()
 
+    @staticmethod
+    def _get_transforms_from_pretrained_weights(weights):
+        """Extract transforms and set antialias=True"""
+        # Need to extract the transforms from the weights.
+        transforms = weights.transforms()
+
+        # We need to set antialias = True. The way the transforms seem to be set up
+        # is that the model has been trained on PIL images, where antialias is always true.
+        # Here I need to first convert to tensor, in order to cut off the authorship
+        # information. But transforms.antialias is set to "warn" which appears to
+        # switch off antialias (and produces an error). Without antialias the pictures also look
+        # very distorted.
+        transforms.antialias = True
+        return transforms
+
     def _model_and_transform_factory(self) -> Tuple[nn.Module, Any]:
-        if self.model_type == "vit_b_16":
-            weights = torchvision.models.ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
-            model = torchvision.models.vit_b_16(weights=weights)
-        elif self.model_type == "vit_b_32":
-            weights = torchvision.models.ViT_L_16_Weights.IMAGENET1K_SWAG_E2E_V1
-            model = torchvision.models.vit_l_16(weights=weights)
-        elif self.model_type == "effnet_b2":
-            weights = torchvision.models.EfficientNet_B2_Weights.IMAGENET1K_V1
-            model = torchvision.models.efficientnet_b2(weights=weights)
-        elif self.model_type == "effnet_b7":
-            weights = torchvision.models.EfficientNet_B7_Weights.IMAGENET1K_V1
-            model = torchvision.models.efficientnet_b7(weights=weights)
-        elif self.model_type == "trivial":
+        if self.model_type == "trivial":
+            # Get case for trivial model. Easiest.
             model = TrivialClassifier(self.num_classes)
             transforms = model.transforms
         else:
-            raise NotImplementedError(f"model_type={self.model_type} not implemented.")
+            if self.model_type == "vit_b_16":
+                weights = torchvision.models.ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
+                model = torchvision.models.vit_b_16(weights=weights)
+            elif self.model_type == "vit_b_32":
+                weights = torchvision.models.ViT_L_16_Weights.IMAGENET1K_SWAG_E2E_V1
+                model = torchvision.models.vit_l_16(weights=weights)
+            elif self.model_type == "effnet_b2":
+                weights = torchvision.models.EfficientNet_B2_Weights.IMAGENET1K_V1
+                model = torchvision.models.efficientnet_b2(weights=weights)
+            elif self.model_type == "effnet_b7":
+                weights = torchvision.models.EfficientNet_B7_Weights.IMAGENET1K_V1
+                model = torchvision.models.efficientnet_b7(weights=weights)
 
-        if self.model_type != "trivial":
-            # Need to extract the transforms from the weights.
-            transforms = weights.transforms()
+            else:
+                raise NotImplementedError(
+                    f"model_type={self.model_type} not implemented."
+                )
+
+            # Freeze all the parameters.
+            # The classifier gets replaced later with unfrozen parameters.
+            for param in model.parameters():
+                param.requires_grad = False
+
+            transforms = self._get_transforms_from_pretrained_weights(weights)
+
         return model, transforms
 
     def _get_model_and_transform(

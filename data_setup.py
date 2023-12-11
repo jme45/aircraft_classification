@@ -13,11 +13,34 @@ from typing import Optional, Callable
 
 import aircraft_types as act
 
+
+class CropAuthorshipInformation(torch.nn.Module):
+    """
+    The lowest 20 pixels contain the authorship information for the picture
+    in the FGVCAircraft dataset. This needs to be removed for training and testing.
+    See: https://arxiv.org/pdf/1306.5151.pdf , page 3
+
+    This class crops those last 20 pixel rows. It only works on tensors.
+    """
+
+    n_annotation_pixels = 20
+
+    def __init__(
+        self,
+    ):
+        super().__init__()
+
+    def forward(self, x):
+        # from the last dimension, drop the last n_annotation_pixels rows.
+        return x[..., : -self.n_annotation_pixels]
+
+
 simple_transf = transf_v2.Compose(
     [
-        transf_v2.Resize((224, 224)),
         transf_v2.ToImage(),
         transf_v2.ToDtype(torch.float32, scale=True),
+        CropAuthorshipInformation(),
+        transf_v2.Resize((224, 224), antialias=True),
     ]
 )
 
@@ -96,7 +119,7 @@ def get_aircraft_data_subset(
     transform: Optional[Callable] = None,
     target_transform: Optional[Callable] = None,
     download: bool = True,
-    aircraft_types: list[str] = act.ALL_AIRCRAFT,
+    aircraft_subset_name: str = "ALL_AIRCRAFT",
 ) -> AircraftData:
     """
     Load an AircraftData dataset and take the subset which only contain aircraft
@@ -110,39 +133,22 @@ def get_aircraft_data_subset(
     :param transform: A function/transform that takes in an PIL image and returns a transformed version. E.g, transforms.RandomCrop
     :param target_transform: A function/transform that takes in the target and transforms it.
     :param download:  If True, downloads the dataset from the internet and puts it in root directory. If dataset is already downloaded, it is not downloaded again.
-    :param aircraft_types: List of aircraft to keep. E.g. ["A300", "Boeing 707"]
+    :param aircraft_subset_name: Name of list of aircraft to keep.
+        Defined in aircraft_types.py. E.g. "CIVILIAN_JET_AIRLINERS"
     :return: AircraftData containing only aircraft data from aircraft_types.
     """
-    # sort aircraft_types and check that then get same order as in original classes
-    aircraft_types = sorted(aircraft_types)
-    assert set(aircraft_types).issubset(set(act.ALL_AIRCRAFT))
-    aircraft_reduced = [a for a in act.ALL_AIRCRAFT if a in aircraft_types]
-    assert list(aircraft_reduced) == list(
-        aircraft_types
-    ), "Order doesn't match. Should not happen"
-
-    # Get the indices of the aircraft types among all the aircraft for which there is data.
-    # Later check that all aircraft in AircraftData matches ac.ALL_AIRCRAFT.
-    idxs_aircraft_types = [
-        i
-        for i, aircr_type in enumerate(act.ALL_AIRCRAFT)
-        if aircr_type in aircraft_types
-    ]
-
-    # Modify target transforms. First get a dictionary from old target to new target.
-    dict_old_new = {
-        old_idx: new_idx for new_idx, old_idx in enumerate(idxs_aircraft_types)
-    }
-    # Anything that we don't want (aircraft not in aircraft_types) gets mapped to -1.
-    _map_old_classes_to_new = lambda x: dict_old_new.get(x, -1)
+    old_to_new_tgt_transform = act.TargetTransform(aircraft_subset_name)
 
     # Obtain new_target_transform. Need to compose if existing target_transform is not None.
     if target_transform is None:
-        # FIXME: Something is wrong with transform. put proper transform back again transf_v2.Compose([transf_v2.Identity()])#
-        new_target_transform = transf_v2.Compose([_map_old_classes_to_new])
+        new_target_transform = transf_v2.Compose([old_to_new_tgt_transform])
     else:
+        # Do old_to_new_tgt_transform first, since we first have to remove the gaps in the targets.
         new_target_transform = transf_v2.Compose(
-            [target_transform, _map_old_classes_to_new]
+            [
+                old_to_new_tgt_transform,
+                target_transform,
+            ]
         )
 
     # Now that we know which target_transform needs to be applied, we can load AircraftData.
@@ -152,12 +158,18 @@ def get_aircraft_data_subset(
     )
     # Now check that the aircraft types in aircraft_data_all matches ac.ALL_AIRCRAFT.
     # If not, the _map_old_classes_to_new will not work correctly.
-    assert list(act.ALL_AIRCRAFT) == list(
+    assert list(act.AIRCRAFT_SUBSETS["ALL_AIRCRAFT"]) == list(
         aircraft_data_all.classes
-    ), "ac.ALL_AIRCRAFT doesn't match classes in aircraft_data_all"
+    ), "ALL_AIRCRAFT doesn't match classes in aircraft_data_all"
 
     # Get the indices of datapoints which are in the aircraft subset required.
-    idxs_subset = np.where(np.isin(aircraft_data_all.targets, idxs_aircraft_types))[0]
+    # The required indices are stored in old_to_new_tgt_transform
+    idxs_subset = np.where(
+        np.isin(
+            aircraft_data_all.targets,
+            old_to_new_tgt_transform.idxs_of_aircraft_in_subset,
+        )
+    )[0]
 
     # Save the targets. These need to be transformed later.
     untransformed_targets = np.array(aircraft_data_all.targets)[idxs_subset]
@@ -168,6 +180,6 @@ def get_aircraft_data_subset(
     # Need to apply transform to the untransformed targets.
     subset.targets = list(map(new_target_transform, untransformed_targets))
     # Since we now have fewer classes, we need to update the classes.
-    subset.classes = aircraft_types
+    subset.classes = aircraft_subset_name
 
     return subset
