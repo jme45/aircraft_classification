@@ -13,6 +13,11 @@ from torch.utils.data import DataLoader
 import torch
 from torch import nn
 
+# In colab and locally it seems that ml_utils gets installed differently.
+# In case ClassificationTrainer is not in ml_utils, import ml_utils.ml_utils
+if "ClassificationTrainer" not in dir(ml_utils):
+    from ml_utils import ml_utils
+
 # fix some parameters.
 ANNOTATION_LEVEL = "family"
 DATA_ROOT_DIR = "data"
