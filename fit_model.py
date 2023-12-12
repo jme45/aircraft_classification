@@ -4,12 +4,10 @@ from datetime import datetime
 from typing import Tuple, Any
 import pandas as pd
 
-from . import aircraft_classification, data_setup, aircraft_types
-
-# import aircraft_classification
-# import data_setup
-# import aircraft_types
-from ml_utils import ml_utils
+import aircraft_classification
+import data_setup
+import aircraft_types
+import ml_utils
 from torchvision.transforms import v2 as transf_v2
 from torch.utils.data import DataLoader
 import torch

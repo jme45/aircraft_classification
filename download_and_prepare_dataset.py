@@ -2,8 +2,8 @@
 Download dataset once, so it is available
 """
 
-from . import data_setup
-from . import fit_model
+import data_setup
+import fit_model
 
 
 def run_downloads():

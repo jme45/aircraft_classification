@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2 as transf_v2
 from tqdm.auto import tqdm
 
-from . import aircraft_types as act
+import aircraft_types as act
 
 
 class CropAuthorshipInformation(torch.nn.Module):
