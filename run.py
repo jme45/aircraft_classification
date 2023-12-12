@@ -6,8 +6,7 @@ import argparse
 
 import pandas as pd
 
-import aircraft_types
-import fit_model
+from . import aircraft_types, fit_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
