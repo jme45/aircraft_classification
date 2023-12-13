@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Tuple, Any
 import pandas as pd
 
-import aircraft_classification
+import classifiers
 import data_setup
 import aircraft_types
 from ml_utils import ml_utils
@@ -17,9 +17,9 @@ from parameters import ANNOTATION_LEVEL, DATA_AUGMENTATION_TRANSFORMS, CROP_TRAN
 
 # In colab and locally it seems that ml_utils gets installed differently.
 # In case ClassificationTrainer is not in ml_utils, import ml_utils_colab.ml_utils.
-# This is a result of just using git clone
-if "ClassificationTrainer" not in dir(ml_utils):
-    from ml_utils_colab.ml_utils import ml_utils
+# This is not needed, due to the way I set up the colab notebook.
+# if "ClassificationTrainer" not in dir(ml_utils):
+#     from ml_utils_colab.ml_utils import ml_utils
 
 
 
@@ -57,7 +57,7 @@ def fit_model(
 
     class_names = aircraft_types.AIRCRAFT_SUBSETS[aircraft_subset_name.upper()]
 
-    classifier = aircraft_classification.AircraftClassifier(
+    classifier = classifiers.AircraftClassifier(
         model_type, class_names, load_classifier_pretrained_weights=False
     )
     if compile_model:
