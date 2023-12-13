@@ -13,26 +13,14 @@ from torch.utils.data import DataLoader
 import torch
 from torch import nn
 
+from parameters import ANNOTATION_LEVEL, DATA_AUGMENTATION_TRANSFORMS, CROP_TRANSFORM, BATCH_SIZE
+
 # In colab and locally it seems that ml_utils gets installed differently.
 # In case ClassificationTrainer is not in ml_utils, import ml_utils_colab.ml_utils.
 # This is a result of just using git clone
 if "ClassificationTrainer" not in dir(ml_utils):
     from ml_utils_colab.ml_utils import ml_utils
 
-# fix some parameters.
-ANNOTATION_LEVEL = "family"
-DATA_ROOT_DIR = "data"
-DATA_AUGMENTATION_TRANSFORMS = transf_v2.TrivialAugmentWide()
-# We always need to apply the crop transform, but before this can be applied,
-# we need to convert PIL.Image to Tensor.
-CROP_TRANSFORM = transf_v2.Compose(
-    [
-        transf_v2.ToImage(),
-        transf_v2.ToDtype(torch.float32, scale=True),
-        data_setup.CropAuthorshipInformation(),
-    ]
-)
-BATCH_SIZE = 32
 
 
 def fit_model(
