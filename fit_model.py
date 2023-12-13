@@ -7,16 +7,17 @@ import pandas as pd
 import aircraft_classification
 import data_setup
 import aircraft_types
-import ml_utils
+from ml_utils import ml_utils
 from torchvision.transforms import v2 as transf_v2
 from torch.utils.data import DataLoader
 import torch
 from torch import nn
 
 # In colab and locally it seems that ml_utils gets installed differently.
-# In case ClassificationTrainer is not in ml_utils, import ml_utils.ml_utils
-# if "ClassificationTrainer" not in dir(ml_utils):
-#     from ml_utils import ml_utils
+# In case ClassificationTrainer is not in ml_utils, import ml_utils_colab.ml_utils.
+# This is a result of just using git clone
+if "ClassificationTrainer" not in dir(ml_utils):
+    from ml_utils_colab.ml_utils import ml_utils
 
 # fix some parameters.
 ANNOTATION_LEVEL = "family"
@@ -57,7 +58,7 @@ def fit_model(
         pin_memory = False
 
     # Set up output_path, consisting of experiment_name, etc.
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%m")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
     output_path = (
         Path(output_path)
         / experiment_name
