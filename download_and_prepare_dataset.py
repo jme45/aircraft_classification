@@ -7,14 +7,14 @@ import fit_model
 
 
 def run_downloads():
-    train_set = data_setup.get_aircraft_data_subset(
+    train_set = data_setup.AircraftData(
         fit_model.DATA_ROOT_DIR,
         "train",
         fit_model.ANNOTATION_LEVEL,
         transform=data_setup.simple_transf,
         download=True,
     )
-    val_set = data_setup.get_aircraft_data_subset(
+    val_set = data_setup.AircraftData(
         fit_model.DATA_ROOT_DIR,
         "val",
         fit_model.ANNOTATION_LEVEL,
