@@ -110,9 +110,13 @@ class AircraftClassifier:
                 model = torchvision.models.vit_l_16(weights=weights)
             elif self.model_type == "effnet_b2":
                 weights = torchvision.models.EfficientNet_B2_Weights.IMAGENET1K_V1
+                # For some reason, with effnet need to get state dict, otherwise things crash.
+                _ = weights.get_state_dict()
                 model = torchvision.models.efficientnet_b2(weights=weights)
             elif self.model_type == "effnet_b7":
                 weights = torchvision.models.EfficientNet_B7_Weights.IMAGENET1K_V1
+                # For some reason, with effnet need to get state dict, otherwise things crash.
+                _ = weights.get_state_dict()
                 model = torchvision.models.efficientnet_b7(weights=weights)
 
             else:
