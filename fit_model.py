@@ -13,14 +13,18 @@ from torch.utils.data import DataLoader
 import torch
 from torch import nn
 
-from parameters import ANNOTATION_LEVEL, DATA_AUGMENTATION_TRANSFORMS, CROP_TRANSFORM, BATCH_SIZE
+from parameters import (
+    ANNOTATION_LEVEL,
+    DATA_AUGMENTATION_TRANSFORMS,
+    CROP_TRANSFORM,
+    BATCH_SIZE,
+)
 
 # In colab and locally it seems that ml_utils gets installed differently.
 # In case ClassificationTrainer is not in ml_utils, import ml_utils_colab.ml_utils.
 # This is not needed, due to the way I set up the colab notebook.
 # if "ClassificationTrainer" not in dir(ml_utils):
 #     from ml_utils_colab.ml_utils import ml_utils
-
 
 
 def fit_model(
@@ -32,6 +36,7 @@ def fit_model(
     device="cuda",
     num_workers: int = 0,
     experiment_name: str = "test",
+    print_progress_to_screen: bool = False,
 ) -> Tuple[dict[str, list], dict[str, Any]]:
     device = device if torch.cuda.is_available() else "cpu"
     # More workers are only useful if using CUDA (experimentally).
@@ -125,6 +130,7 @@ def fit_model(
         tensorboard_logger=tensorboard_logger,
         disable_epoch_progress_bar=False,
         disable_within_epoch_progress_bar=False,
+        print_progress_to_screen=print_progress_to_screen,
     )
 
     all_results = trainer.train()
