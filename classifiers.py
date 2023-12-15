@@ -10,6 +10,33 @@ from PIL import Image
 from torch import nn
 from torchvision.transforms import v2 as transf_v2
 
+import aircraft_types as act
+import data_setup
+import parameters
+
+
+def inverse_of_normalisation_transform(transform):
+    """
+    Perform inverse of the transf_v2.Normalise transform
+    :param transform:
+    :return:
+    """
+    if hasattr(transform, "mean"):
+        means = transform.mean
+        stds = transform.std
+        inv_std = transf_v2.Normalize(
+            mean=[
+                0.0,
+                0.0,
+                0.0,
+            ],
+            std=[1.0 / s for s in stds],
+        )
+        inv_means = transf_v2.Normalize(mean=[-m for m in means], std=[1.0, 1.0, 1.0])
+        return transf_v2.Compose([inv_std, inv_means])
+    else:
+        return transf_v2.Identity()
+
 
 class TrivialClassifier(nn.Module):
     """
@@ -46,21 +73,27 @@ class AircraftClassifier:
     def __init__(
         self,
         model_type: str,
-        class_names: list[str],
+        aircraft_subset_name: str,
         load_classifier_pretrained_weights: bool,
         classifier_pretrained_weights_file: Optional[str | Path] = None,
     ):
         """
 
         :param model_type: "vit_b_16", "vit_l_16", "effnet_b2", "effnet_b7"
-        :param class_names:
+        :param aircraft_subset_name: name of the aircraft subset ('TEST', 'CIVILIAN_JETS',..).
+            Must be one defined in aircraft_types.AIRCRAFT_SUBSETS
         :param load_classifier_pretrained_weights: whether to load classifier
         :param classifier_pretrained_weights_file: file for classifier data
         """
-        self.class_names = class_names
+        self.aircraft_subset_name = aircraft_subset_name.upper()
+        assert self.aircraft_subset_name in act.AIRCRAFT_SUBSETS, (
+            f"aircraft_subset_name={aircraft_subset_name} undefined, "
+            f"not one of {list(act.AIRCRAFT_SUBSETS.keys())}"
+        )
+        self.class_names = act.AIRCRAFT_SUBSETS[self.aircraft_subset_name]
         self.classifier_pretrained_weights_file = classifier_pretrained_weights_file
         self.load_classifier_pretrained_weights = load_classifier_pretrained_weights
-        self.num_classes = len(class_names)
+        self.num_classes = len(self.class_names)
         self.model_type = (
             model_type.lower()
         )  # drop complications from upper/lower cases
@@ -80,6 +113,28 @@ class AircraftClassifier:
 
         # Obtain model and set weights.
         self._get_model_and_transform()
+
+        # If we train on the FGVCAircraft dataset, we need to implement cropping, same for prediction.
+        # If we do prection on a new picture, crop shouldn't be done.
+        self.train_transform_with_crop = transf_v2.Compose(
+            [
+                parameters.TO_TENSOR_TRANSFORMS,
+                data_setup.CropAuthorshipInformation(),
+                parameters.DATA_AUGMENTATION_TRANSFORMS,
+                self.transforms,
+            ]
+        )
+        self.predict_transform_with_crop = transf_v2.Compose(
+            [
+                parameters.TO_TENSOR_TRANSFORMS,
+                data_setup.CropAuthorshipInformation(),
+                self.transforms,
+            ]
+        )
+        self.predict_transform_without_crop = transf_v2.Compose(
+            [parameters.TO_TENSOR_TRANSFORMS, self.transforms]
+        )
+        self.inv_of_normalisation = inverse_of_normalisation_transform(self.transforms)
 
     @staticmethod
     def _get_transforms_from_pretrained_weights(weights):
@@ -202,6 +257,30 @@ class AircraftClassifier:
         self.model = model
         self.transforms = transforms
 
+    def state_dict_extractor(self, model) -> dict[str, Any]:
+        """
+        Extract the part of the state dict we want to save, the part that was trained
+
+        This function can also be passed to ml_utils.ClassificationTrainer,
+        so the correct state dict gets saved.
+        :parameter: model. This is not self.model, so it can be passed as a parameter,
+            as required by ml_utils.ClassificationTrainer
+        """
+        if self.model_type.startswith("vit"):
+            # Extract "heads", as that's the part we trained
+            state_dict = model.heads.state_dict()
+        elif self.model_type.startswith("effnet"):
+            # Extract "classifier", as that's the part we trained
+            state_dict = model.classifier.state_dict()
+        elif self.model_type == "trivial":
+            # Get the entire model.
+            state_dict = model.state_dict()
+        else:
+            raise NotImplementedError(
+                f"model_type={self.model_type} not implemented for saving."
+            )
+        return state_dict
+
     def save_model(self, output_file: str | Path) -> None:
         """
         Save model to the file.
@@ -212,29 +291,22 @@ class AircraftClassifier:
         :return: None
         """
         output_file = Path(output_file)
-        if self.model_type.startswith("vit"):
-            # Save "heads"
-            torch.save(self.model.heads.state_dict(), output_file)
-        elif self.model_type.startswith("effnet"):
-            # Save "classifier"
-            torch.save(self.model.classifier.state_dict(), output_file)
-        elif self.model_type == "trivial":
-            # Save the entire model.
-            torch.save(self.model.state_dict(), output_file)
-        else:
-            raise NotImplementedError(
-                f"model_type={self.model_type} not implemented for saving."
-            )
+        torch.save(self.state_dict_extractor(), output_file)
         logging.info(f"Saved model to file {output_file}")
 
-    def predict(self, img: Image) -> Tuple[dict[str, float], float]:
+    def predict(
+        self, img: Image, apply_crop: bool = False
+    ) -> Tuple[dict[str, float], float]:
         """
         For a given image, make the prediction.
         :param img:
         :return: dict of prediction probabilities for all classes and time to make prediction
         """
         # Apply transforms
-        trans_img = self.transforms(img)
+        if apply_crop:
+            trans_img = self.predict_transform_with_crop(img)
+        else:
+            trans_img = self.predict_transform_without_crop(img)
 
         # Set model to eval mode.
         self.model.eval()

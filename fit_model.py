@@ -13,12 +13,7 @@ from torch.utils.data import DataLoader
 import torch
 from torch import nn
 
-from parameters import (
-    ANNOTATION_LEVEL,
-    DATA_AUGMENTATION_TRANSFORMS,
-    CROP_TRANSFORM,
-    BATCH_SIZE,
-)
+import parameters
 
 # In colab and locally it seems that ml_utils gets installed differently.
 # In case ClassificationTrainer is not in ml_utils, import ml_utils_colab.ml_utils.
@@ -60,10 +55,8 @@ def fit_model(
         / timestamp
     )
 
-    class_names = aircraft_types.AIRCRAFT_SUBSETS[aircraft_subset_name.upper()]
-
     classifier = classifiers.AircraftClassifier(
-        model_type, class_names, load_classifier_pretrained_weights=False
+        model_type, aircraft_subset_name, load_classifier_pretrained_weights=False
     )
     if compile_model:
         classifier.model = torch.compile(classifier.model)
@@ -74,15 +67,26 @@ def fit_model(
     # Train transform consists of data augmentation transform + model transforms.
     # Validation transform consists only of model transforms.
     train_transforms = transf_v2.Compose(
-        [CROP_TRANSFORM, DATA_AUGMENTATION_TRANSFORMS, classifier.transforms]
+        [
+            parameters.TO_TENSOR_TRANSFORMS,
+            data_setup.CropAuthorshipInformation(),
+            parameters.DATA_AUGMENTATION_TRANSFORMS,
+            classifier.transforms,
+        ]
     )
     # For validation, don't use data augmentation
-    val_transforms = transf_v2.Compose([CROP_TRANSFORM, classifier.transforms])
+    val_transforms = transf_v2.Compose(
+        [
+            parameters.TO_TENSOR_TRANSFORMS,
+            parameters.CROP_TRANSFORM,
+            classifier.transforms,
+        ]
+    )
 
     train_set = data_setup.get_aircraft_data_subset(
         "data",
         "train",
-        ANNOTATION_LEVEL,
+        parameters.ANNOTATION_LEVEL,
         train_transforms,
         target_transform=None,
         download=True,
@@ -91,7 +95,7 @@ def fit_model(
     val_set = data_setup.get_aircraft_data_subset(
         "data",
         "val",
-        ANNOTATION_LEVEL,
+        parameters.ANNOTATION_LEVEL,
         val_transforms,
         target_transform=None,
         download=True,
@@ -100,14 +104,14 @@ def fit_model(
 
     train_dataloader = DataLoader(
         train_set,
-        BATCH_SIZE,
+        parameters.BATCH_SIZE,
         shuffle=True,
         num_workers=num_workers,
         pin_memory=pin_memory,
     )
     val_dataloader = DataLoader(
         val_set,
-        BATCH_SIZE,
+        parameters.BATCH_SIZE,
         shuffle=False,
         num_workers=num_workers,
         pin_memory=pin_memory,
@@ -124,13 +128,14 @@ def fit_model(
         n_epochs=n_epochs,
         device=device,
         output_path=output_path,
-        num_classes=len(class_names),
+        num_classes=classifier.num_classes,
         save_lowest_test_loss_model=True,
         save_final_model=True,
         tensorboard_logger=tensorboard_logger,
         disable_epoch_progress_bar=False,
         disable_within_epoch_progress_bar=False,
         print_progress_to_screen=print_progress_to_screen,
+        state_dict_extractor=classifier.state_dict_extractor,
     )
 
     all_results = trainer.train()

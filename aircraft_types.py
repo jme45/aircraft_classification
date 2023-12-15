@@ -1,7 +1,7 @@
 AIRCRAFT_SUBSETS = {
     # Reduced set for testing purposes.
     "TEST": ["A380", "Boeing 747", "DC-8"],
-    "CIVILIAN_JET_AIRLINERS": [
+    "CIVILIAN_JETS": [
         "A300",
         "A310",
         "A320",
