@@ -19,7 +19,7 @@ def inverse_of_normalisation_transform(transform):
     """
     Perform inverse of the transf_v2.Normalise transform
     :param transform:
-    :return:
+    :return: Inverse of the normalisation transform.
     """
     if hasattr(transform, "mean"):
         means = transform.mean
