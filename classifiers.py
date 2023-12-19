@@ -194,7 +194,10 @@ class AircraftClassifier:
         """
         Load a torchvision model with pre-trained weights.
 
-        Replace classifier head (this may have different names) with a custom classifier.
+        Replace classifier head (this may have different names) with a
+        custom classifier.
+        Always load model to CPU, as not all devices will have a GPU.
+        We can always move to GPU later.
 
         :param model_type:
         :return: None
@@ -216,7 +219,10 @@ class AircraftClassifier:
             if self.load_classifier_pretrained_weights:
                 # Load weights from file (we know it exists).
                 model.heads.load_state_dict(
-                    torch.load(self.classifier_pretrained_weights_file)
+                    torch.load(
+                        self.classifier_pretrained_weights_file,
+                        map_location=torch.device("cpu"),
+                    ),
                 )
 
         elif self.model_type.startswith("effnet"):
@@ -238,13 +244,19 @@ class AircraftClassifier:
             if self.load_classifier_pretrained_weights:
                 # Load weights from file (we know it exists).
                 model.classifier.load_state_dict(
-                    torch.load(self.classifier_pretrained_weights_file)
+                    torch.load(
+                        self.classifier_pretrained_weights_file,
+                        map_location=torch.device("cpu"),
+                    )
                 )
         elif self.model_type == "trivial":
             # check whether we want to load the state dict.
             if self.load_classifier_pretrained_weights:
                 model.load_state_dict(
-                    torch.load(self.classifier_pretrained_weights_file)
+                    torch.load(
+                        self.classifier_pretrained_weights_file,
+                        map_location=torch.device("cpu"),
+                    )
                 )
         else:
             raise NotImplementedError(f"model_type={self.model_type} not implemented.")
@@ -300,6 +312,7 @@ class AircraftClassifier:
         """
         For a given image, make the prediction.
         :param img:
+        :param apply_crop: whether to crop the bottom 20 pixels. Only needed for FGVCAircraft dataset
         :return: dict of prediction probabilities for all classes and time to make prediction
         """
         # Apply transforms
@@ -329,4 +342,7 @@ class AircraftClassifier:
 
         end_time = timer()
 
-        return pred_labels_and_probs, end_time - start_time
+        # Get prediction time.
+        pred_time = end_time - start_time
+
+        return pred_labels_and_probs, pred_time
