@@ -16,7 +16,7 @@ results = fit_model.fit_model('vit_b_16',
                               )
 ```
 
-This will save a model which can be loaded like this:
+This will save a model which can be loaded and then make predictions like this:
 ```python
 import classifiers
 
@@ -26,5 +26,10 @@ vit = classifiers.AircraftClassifier('vit_b_16',
                                      <path_to_pytorch_file>)
 
 vit.predict(pil_image)
+```
+
+It's also possible to run the code from the command line.
+```bash
+./run -m 'vit_b_16' -a 'CIVILIAN_JETS' -n 2 -p 'runs'
 ```
 

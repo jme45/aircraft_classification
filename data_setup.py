@@ -177,6 +177,9 @@ def get_aircraft_data_subset(
     # Need to apply transform to the untransformed targets.
     subset.targets = list(map(new_target_transform, untransformed_targets))
     # Since we now have fewer classes, we need to update the classes.
-    subset.classes = aircraft_subset_name
+    subset.classes = act.AIRCRAFT_SUBSETS[aircraft_subset_name.upper()]
+
+    # Define a class_to_idx dictionary
+    subset.class_to_idx = {c: i for i, c in enumerate(subset.classes)}
 
     return subset

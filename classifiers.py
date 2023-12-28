@@ -24,6 +24,7 @@ def inverse_of_normalisation_transform(transform):
     if hasattr(transform, "mean"):
         means = transform.mean
         stds = transform.std
+        # Create the inverse to std.
         inv_std = transf_v2.Normalize(
             mean=[
                 0.0,
@@ -32,7 +33,10 @@ def inverse_of_normalisation_transform(transform):
             ],
             std=[1.0 / s for s in stds],
         )
+        # Create the inverse to de-mean.
         inv_means = transf_v2.Normalize(mean=[-m for m in means], std=[1.0, 1.0, 1.0])
+        # First apply inverse to divide by std, then inverse to de-mean,
+        # reverse of normalisation operation.
         return transf_v2.Compose([inv_std, inv_means])
     else:
         return transf_v2.Identity()
@@ -115,7 +119,8 @@ class AircraftClassifier:
         self._get_model_and_transform()
 
         # If we train on the FGVCAircraft dataset, we need to implement cropping, same for prediction.
-        # If we do prection on a new picture, crop shouldn't be done.
+        # If we do prediction on a new picture, crop shouldn't be done.
+        # Only the training gets the data augmentation transforms.
         self.train_transform_with_crop = transf_v2.Compose(
             [
                 parameters.TO_TENSOR_TRANSFORMS,
@@ -303,7 +308,7 @@ class AircraftClassifier:
         :return: None
         """
         output_file = Path(output_file)
-        torch.save(self.state_dict_extractor(), output_file)
+        torch.save(self.state_dict_extractor(self.model), output_file)
         logging.info(f"Saved model to file {output_file}")
 
     def predict(

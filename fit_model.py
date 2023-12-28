@@ -12,6 +12,7 @@ from torchvision.transforms import v2 as transf_v2
 from torch.utils.data import DataLoader
 import torch
 from torch import nn
+from torch.optim.optimizer import Optimizer
 
 import parameters
 
@@ -32,6 +33,8 @@ def fit_model(
     num_workers: int = 0,
     experiment_name: str = "test",
     print_progress_to_screen: bool = False,
+    optimiser_class: str | Optimizer = "Adam",
+    optimiser_kwargs: dict = {"lr": 1e-3},
 ) -> Tuple[dict[str, list], dict[str, Any]]:
     device = device if torch.cuda.is_available() else "cpu"
     # More workers are only useful if using CUDA (experimentally).
@@ -64,30 +67,11 @@ def fit_model(
     # Calculate number of model parameters
     num_params = sum(torch.numel(param) for param in classifier.model.parameters())
 
-    # Train transform consists of data augmentation transform + model transforms.
-    # Validation transform consists only of model transforms.
-    train_transforms = transf_v2.Compose(
-        [
-            parameters.TO_TENSOR_TRANSFORMS,
-            data_setup.CropAuthorshipInformation(),
-            parameters.DATA_AUGMENTATION_TRANSFORMS,
-            classifier.transforms,
-        ]
-    )
-    # For validation, don't use data augmentation
-    val_transforms = transf_v2.Compose(
-        [
-            parameters.TO_TENSOR_TRANSFORMS,
-            parameters.CROP_TRANSFORM,
-            classifier.transforms,
-        ]
-    )
-
     train_set = data_setup.get_aircraft_data_subset(
         "data",
         "train",
         parameters.ANNOTATION_LEVEL,
-        train_transforms,
+        classifier.train_transform_with_crop,
         target_transform=None,
         download=True,
         aircraft_subset_name=aircraft_subset_name,
@@ -96,7 +80,7 @@ def fit_model(
         "data",
         "val",
         parameters.ANNOTATION_LEVEL,
-        val_transforms,
+        classifier.predict_transform_with_crop,
         target_transform=None,
         download=True,
         aircraft_subset_name=aircraft_subset_name,
@@ -122,8 +106,8 @@ def fit_model(
         model=classifier.model,
         train_dataloader=train_dataloader,
         test_dataloader=val_dataloader,
-        optimiser_class="Adam",
-        optimiser_kwargs={"lr": 1e-3},
+        optimiser_class=optimiser_class,
+        optimiser_kwargs=optimiser_kwargs,
         loss_fn=nn.CrossEntropyLoss(label_smoothing=0.1),
         n_epochs=n_epochs,
         device=device,
