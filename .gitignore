@@ -4,3 +4,5 @@ data/
 runs/
 .DS_store
 __pycache__
+copy_runs_google/
+tmp/

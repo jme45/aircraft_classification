@@ -1,20 +1,19 @@
 import os
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Tuple, Any
+
 import pandas as pd
+import torch
+from ml_utils import ml_utils
+from torch import nn
+from torch.optim.optimizer import Optimizer
+from torch.utils.data import DataLoader
 
 import classifiers
 import data_setup
-import aircraft_types
-from ml_utils import ml_utils
-from torchvision.transforms import v2 as transf_v2
-from torch.utils.data import DataLoader
-import torch
-from torch import nn
-from torch.optim.optimizer import Optimizer
-
 import parameters
+
 
 # In colab and locally it seems that ml_utils gets installed differently.
 # In case ClassificationTrainer is not in ml_utils, import ml_utils_colab.ml_utils.
@@ -36,6 +35,22 @@ def fit_model(
     optimiser_class: str | Optimizer = "Adam",
     optimiser_kwargs: dict = {"lr": 1e-3},
 ) -> Tuple[dict[str, list], dict[str, Any]]:
+    """
+    Fit a model of a particular type to an aircraft subset
+
+    :param model_type: type of model, e.g. vit_b_16, effnet_b7
+    :param aircraft_subset_name: e.g. CIVILIAN_JETS
+    :param n_epochs: number of epochs to train for
+    :param output_path: path to save state dict and tensorboard files
+    :param compile_model: whether to compile (apparently best on good GPUs)
+    :param device: device to run on
+    :param num_workers: num workers for dataloader. 0 best on laptop.
+    :param experiment_name:
+    :param print_progress_to_screen:
+    :param optimiser_class: e.g. "Adam" or "SGD"
+    :param optimiser_kwargs: any arguments for the optimiser, e.g. "lr"
+    :return:
+    """
     device = device if torch.cuda.is_available() else "cpu"
     # More workers are only useful if using CUDA (experimentally).
     # I won't ever have access to a Computer with more than one GPU,
