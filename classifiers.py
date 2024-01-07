@@ -169,12 +169,12 @@ class AircraftClassifier:
             elif self.model_type == "vit_b_32":
                 weights = torchvision.models.ViT_L_16_Weights.IMAGENET1K_SWAG_E2E_V1
                 model = torchvision.models.vit_l_16(weights=weights)
-            elif self.model_type == "effnet_b2":
+            elif self.model_type.startswith("effnet_b2"):
                 weights = torchvision.models.EfficientNet_B2_Weights.IMAGENET1K_V1
                 # For some reason, with effnet need to get state dict, otherwise things crash.
                 _ = weights.get_state_dict()
                 model = torchvision.models.efficientnet_b2(weights=weights)
-            elif self.model_type == "effnet_b7":
+            elif self.model_type.startswith("effnet_b7"):
                 weights = torchvision.models.EfficientNet_B7_Weights.IMAGENET1K_V1
                 # For some reason, with effnet need to get state dict, otherwise things crash.
                 _ = weights.get_state_dict()
@@ -249,20 +249,34 @@ class AircraftClassifier:
 
             if self.load_classifier_pretrained_weights:
                 # Load weights from file (we know the file exists).
-                model.classifier.load_state_dict(
-                    torch.load(
-                        self.classifier_pretrained_weights_file,
-                        map_location=torch.device("cpu"),
+                if self.model_type.endswith("train_entire_model"):
+                    # Here we want to apply the state dict to the entire model, not just the classifier
+                    model.load_state_dict(
+                        torch.load(
+                            self.classifier_pretrained_weights_file,
+                            map_location=torch.device("cpu"),
+                        )
                     )
-                )
+                else:
+                    # Here we only apply the state dict to the classifier, leave all the rest as is
+                    model.classifier.load_state_dict(
+                        torch.load(
+                            self.classifier_pretrained_weights_file,
+                            map_location=torch.device("cpu"),
+                        )
+                    )
 
-            # Only the classifier part should be trainable. Because effnet uses BatchNorm,
-            # even if the parameters are frozen, if the entire model is trainable,
-            # the output from BatchNorm will change, and thus also the features change.
-            # I don't want the features to change with training, otherwise I would have
-            # to save the entire state_dict and load that
-            # (and I'm also quite happy with all the pretrained parameters for the features)
-            self.trainable_parts = ["classifier"]
+            if self.model_type.endswith("train_entire_model"):
+                # Don't do anything. By default already train all parts of the model
+                pass
+            else:
+                # Only the classifier part should be trainable. Because effnet uses BatchNorm,
+                # even if the parameters are frozen, if the entire model is trainable,
+                # the output from BatchNorm will change, and thus also the features change.
+                # I don't want the features to change with training, otherwise I would have
+                # to save the entire state_dict and load that
+                # (and I'm also quite happy with all the pretrained parameters for the features)
+                self.trainable_parts = ["classifier"]
 
         elif self.model_type == "trivial":
             # check whether we want to load the state dict.
@@ -300,7 +314,14 @@ class AircraftClassifier:
         if self.model_type.startswith("vit"):
             # Extract "heads", as that's the part we trained
             state_dict = model.heads.state_dict()
-        elif self.model_type.startswith("effnet"):
+        elif self.model_type.startswith("effnet") and self.model_type.endswith(
+            "train_entire_model"
+        ):
+            # We want to train the entire model, including the BatchNorm, so get the entire state_dict
+            state_dict = model.state_dict()
+        elif self.model_type.startswith("effnet") and not (
+            self.model_type.endswith("train_entire_model")
+        ):
             # Extract "classifier", as that's the part we trained
             state_dict = model.classifier.state_dict()
         elif self.model_type == "trivial":

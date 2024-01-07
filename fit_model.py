@@ -136,7 +136,7 @@ def fit_model(
         disable_within_epoch_progress_bar=False,
         print_progress_to_screen=print_progress_to_screen,
         state_dict_extractor=classifier.state_dict_extractor,
-        trainable_parts=classifier.trainable_parts
+        trainable_parts=classifier.trainable_parts,
     )
 
     all_results = trainer.train()
