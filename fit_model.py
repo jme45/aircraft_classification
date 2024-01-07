@@ -34,6 +34,7 @@ def fit_model(
     print_progress_to_screen: bool = False,
     optimiser_class: str | Optimizer = "Adam",
     optimiser_kwargs: dict = {"lr": 1e-3},
+    return_classifier: bool=False
 ) -> Tuple[dict[str, list], dict[str, Any]]:
     """
     Fit a model of a particular type to an aircraft subset
@@ -141,7 +142,11 @@ def fit_model(
 
     meta_info = dict(num_params=num_params, output_path=str(output_path))
 
-    return all_results, meta_info
+    ret = [all_results, meta_info]
+    if return_classifier:
+        ret.append(classifier)
+
+    return ret
 
 
 if __name__ == "__main__":
