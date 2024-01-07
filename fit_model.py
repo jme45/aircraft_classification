@@ -34,7 +34,7 @@ def fit_model(
     print_progress_to_screen: bool = False,
     optimiser_class: str | Optimizer = "Adam",
     optimiser_kwargs: dict = {"lr": 1e-3},
-    return_classifier: bool=False
+    return_classifier: bool = False,
 ) -> Tuple[dict[str, list], dict[str, Any]]:
     """
     Fit a model of a particular type to an aircraft subset
@@ -136,6 +136,7 @@ def fit_model(
         disable_within_epoch_progress_bar=False,
         print_progress_to_screen=print_progress_to_screen,
         state_dict_extractor=classifier.state_dict_extractor,
+        trainable_parts=classifier.trainable_parts
     )
 
     all_results = trainer.train()

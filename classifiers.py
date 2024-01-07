@@ -111,9 +111,10 @@ class AircraftClassifier:
                 classifier_pretrained_weights_file
             ).is_file(), f"classifier_pretrained_weights_file = {classifier_pretrained_weights_file} doesn't exist."
 
-        # Initialise model and transform.
+        # Initialise model, transform and which parts should be set as trainable.
         self.model = None
         self.transforms = None
+        self.trainable_parts = "all"
 
         # Obtain model and set weights.
         self._get_model_and_transform()
@@ -247,13 +248,22 @@ class AircraftClassifier:
             model.classifier = new_head
 
             if self.load_classifier_pretrained_weights:
-                # Load weights from file (we know it exists).
+                # Load weights from file (we know the file exists).
                 model.classifier.load_state_dict(
                     torch.load(
                         self.classifier_pretrained_weights_file,
                         map_location=torch.device("cpu"),
                     )
                 )
+
+            # Only the classifier part should be trainable. Because effnet uses BatchNorm,
+            # even if the parameters are frozen, if the entire model is trainable,
+            # the output from BatchNorm will change, and thus also the features change.
+            # I don't want the features to change with training, otherwise I would have
+            # to save the entire state_dict and load that
+            # (and I'm also quite happy with all the pretrained parameters for the features)
+            self.trainable_parts = ["classifier"]
+
         elif self.model_type == "trivial":
             # check whether we want to load the state dict.
             if self.load_classifier_pretrained_weights:
@@ -270,6 +280,10 @@ class AircraftClassifier:
             logging.info(
                 f"Loaded model weights from {self.classifier_pretrained_weights_file}"
             )
+
+        # Set the entire model to eval mode. That way, later, some parts can be set
+        # to train mode and some to eval.
+        model.eval()
 
         self.model = model
         self.transforms = transforms

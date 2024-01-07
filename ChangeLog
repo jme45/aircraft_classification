@@ -2,3 +2,4 @@
 
 ### Unversioned
 - Code works for basic use.
+- Implemented trainable_parts to classifier, since for effnet cannot set entire model to .train()
