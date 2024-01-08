@@ -1,3 +1,7 @@
+"""
+Module for preparing FGVCA aircraft data for training
+"""
+
 from pathlib import Path
 from typing import Optional, Callable
 
@@ -11,6 +15,7 @@ from tqdm.auto import tqdm
 import aircraft_types as act
 from parameters import CropAuthorshipInformation
 
+# This is a simple transform, useful for testing
 simple_transf = transf_v2.Compose(
     [
         transf_v2.ToImage(),
@@ -68,13 +73,16 @@ class AircraftData(torchvision.datasets.FGVCAircraft):
                 dl_tmp = DataLoader(self, self.BATCH_SIZE_FOR_TARGETS, shuffle=False)
                 targets = []
                 for X, y in tqdm(dl_tmp, desc="Extracting targets", total=len(dl_tmp)):
+                    # Create list of arrays of targets
                     targets.append(y.numpy())
+                # Concatenate (flatten) list of arrays
                 targets = list(np.concatenate(targets))
 
             else:
                 targets = []
                 # Iterate through all items in dataset.
                 for Xy in tqdm(self, desc="Extracting targets", total=len(self)):
+                    # Append the target (element 1)
                     targets.append(Xy[1])
             self.targets = targets
 
@@ -113,6 +121,9 @@ def get_aircraft_data_subset(
         Defined in aircraft_types.py. E.g. "CIVILIAN_JET_AIRLINERS"
     :return: AircraftData containing only aircraft data from aircraft_types.
     """
+    # Get the transform which transforms the old target to the new one, once the
+    # number of aircraft types has been reduced. E.g. if we only had A310 and B707
+    # (target = 1 and 12), these would be mapped to 0 and 1 respectively.
     old_to_new_tgt_transform = act.TargetTransform(aircraft_subset_name)
 
     # Obtain new_target_transform. Need to compose if existing target_transform is not None.

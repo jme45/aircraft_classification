@@ -1,3 +1,7 @@
+"""
+Defines the different aircraft classifiers.
+"""
+
 import logging
 from collections import OrderedDict
 from pathlib import Path
@@ -16,7 +20,9 @@ import parameters
 
 def inverse_of_normalisation_transform(transform):
     """
-    Perform inverse of the transf_v2.Normalise transform
+    Perform inverse of the transf_v2.Normalise transform.
+
+    Useful when wanting to visualise images from the dataset or from the dataloader.
     :param transform:
     :return: Inverse of the normalisation transform.
     """
@@ -48,6 +54,7 @@ class TrivialClassifier(nn.Module):
 
     image_size = 8
     n_colour_channels = 3
+    # Minimum transforms to be able to process some images.
     transforms = transf_v2.Compose(
         [
             transf_v2.Resize((image_size, image_size), antialias=True),
@@ -81,6 +88,7 @@ class AircraftClassifier:
         classifier_pretrained_weights_file: Optional[str | Path] = None,
     ):
         """
+        Initialise an AircraftClassifier.
 
         :param model_type: "vit_b_16", "vit_l_16", "effnet_b2", "effnet_b7"
         :param aircraft_subset_name: name of the aircraft subset ('TEST', 'CIVILIAN_JETS',..).
@@ -89,6 +97,7 @@ class AircraftClassifier:
         :param classifier_pretrained_weights_file: file for classifier data
         """
         self.aircraft_subset_name = aircraft_subset_name.upper()
+        # Check that aircraft_subset_name is actually defined.
         assert self.aircraft_subset_name in act.AIRCRAFT_SUBSETS, (
             f"aircraft_subset_name={aircraft_subset_name} undefined, "
             f"not one of {list(act.AIRCRAFT_SUBSETS.keys())}"
@@ -110,9 +119,11 @@ class AircraftClassifier:
                 classifier_pretrained_weights_file
             ).is_file(), f"classifier_pretrained_weights_file = {classifier_pretrained_weights_file} doesn't exist."
 
-        # Initialise model, transform and which parts should be set as trainable.
+        # Initialise model
         self.model = None
+        # This contains the transform that is needed for the underlying model, preset by ViT or Effnet.
         self.transforms = None
+        # Specify which part of the model should be set to .eval() during the train step.
         self.trainable_parts = "all"
 
         # Obtain model and set weights.
@@ -157,6 +168,15 @@ class AircraftClassifier:
         return transforms
 
     def _model_and_transform_factory(self) -> Tuple[nn.Module, Any]:
+        """
+        Get the torchvision model and the required transform for the images.
+
+        The transforms need to be the same as those used when
+        training the original model, otherwise transfer learning and
+        prediction will not work.
+
+        :return: model, transform
+        """
         if self.model_type == "trivial":
             # Get case for trivial model. Easiest.
             model = TrivialClassifier(self.num_classes)
@@ -165,7 +185,7 @@ class AircraftClassifier:
             if self.model_type == "vit_b_16":
                 weights = torchvision.models.ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1
                 model = torchvision.models.vit_b_16(weights=weights)
-            elif self.model_type == "vit_b_32":
+            elif self.model_type == "vit_l_16":
                 weights = torchvision.models.ViT_L_16_Weights.IMAGENET1K_SWAG_E2E_V1
                 model = torchvision.models.vit_l_16(weights=weights)
             elif self.model_type.startswith("effnet_b2"):
@@ -197,7 +217,7 @@ class AircraftClassifier:
         self,
     ) -> None:
         """
-        Load a torchvision model with pre-trained weights.
+        Load a torchvision model with pre-trained weights, replacing classifier head.
 
         Replace classifier head (this may have different names) with a
         custom classifier.
@@ -211,8 +231,8 @@ class AircraftClassifier:
 
         # Replace classifier
         if self.model_type.startswith("vit"):
-            # The classifier head is called "heads" and consists of a Sequential
-            # with one linear layer.
+            # The classifier head for a Vision Transformer is called "heads"
+            # and consists of a Sequential with one linear layer.
             old_head = model.heads.head
             in_features = old_head.in_features
             bias = old_head.bias is not None
@@ -303,7 +323,7 @@ class AircraftClassifier:
 
     def state_dict_extractor(self, model) -> dict[str, Any]:
         """
-        Extract the part of the state dict we want to save, the part that was trained
+        Extract the part of the state dict we want to save, the part that was trained.
 
         This function can also be passed to ml_utils.ClassificationTrainer,
         so the correct state dict gets saved.
@@ -342,7 +362,10 @@ class AircraftClassifier:
         :return: None
         """
         output_file = Path(output_file)
-        torch.save(self.state_dict_extractor(self.model), output_file)
+        # Get the part of the state_dict that we want to save.
+        state_dict = self.state_dict_extractor(self.model)
+        # Then save it.
+        torch.save(state_dict, output_file)
         logging.info(f"Saved model to file {output_file}")
 
     def predict(

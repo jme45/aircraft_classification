@@ -1,3 +1,8 @@
+"""
+Module to run a model fit without too much effort.
+"""
+
+
 import os
 from datetime import datetime
 from pathlib import Path
@@ -28,7 +33,7 @@ def fit_model(
     n_epochs: int,
     output_path: str | Path = Path("runs"),
     compile_model: bool = False,
-    device="cuda",
+    device="cpu",
     num_workers: int = 0,
     experiment_name: str = "test",
     print_progress_to_screen: bool = False,
@@ -44,15 +49,15 @@ def fit_model(
     :param n_epochs: number of epochs to train for
     :param output_path: path to save state dict and tensorboard files
     :param compile_model: whether to compile (apparently best on good GPUs)
-    :param device: device to run on
+    :param device: device to run on.
     :param num_workers: num workers for dataloader. 0 best on laptop.
     :param experiment_name:
     :param print_progress_to_screen:
     :param optimiser_class: e.g. "Adam" or "SGD"
     :param optimiser_kwargs: any arguments for the optimiser, e.g. "lr"
+    :param return_classifier: If True, return the final classifier as an extra element in the list returned.
     :return:
     """
-    device = device if torch.cuda.is_available() else "cpu"
     # More workers are only useful if using CUDA (experimentally).
     # I won't ever have access to a Computer with more than one GPU,
     # so can cap number of workers at 2. Similarly pin_memory.
@@ -77,26 +82,29 @@ def fit_model(
     classifier = classifiers.AircraftClassifier(
         model_type, aircraft_subset_name, load_classifier_pretrained_weights=False
     )
+
+    # Compiling is allegedly useful on more powerful GPUs.
     if compile_model:
         classifier.model = torch.compile(classifier.model)
 
-    # Calculate number of model parameters
+    # Calculate number of model parameters, mainly as general info.
     num_params = sum(torch.numel(param) for param in classifier.model.parameters())
 
+    # Set up training and validation sets.
     train_set = data_setup.get_aircraft_data_subset(
-        "data",
-        "train",
-        parameters.ANNOTATION_LEVEL,
-        classifier.train_transform_with_crop,
+        root="data",
+        split="train",
+        annotation_level=parameters.ANNOTATION_LEVEL,
+        transform=classifier.train_transform_with_crop,
         target_transform=None,
         download=True,
         aircraft_subset_name=aircraft_subset_name,
     )
     val_set = data_setup.get_aircraft_data_subset(
-        "data",
-        "val",
-        parameters.ANNOTATION_LEVEL,
-        classifier.predict_transform_with_crop,
+        root="data",
+        split="val",
+        annotation_level=parameters.ANNOTATION_LEVEL,
+        transform=classifier.predict_transform_with_crop,
         target_transform=None,
         download=True,
         aircraft_subset_name=aircraft_subset_name,
@@ -117,7 +125,10 @@ def fit_model(
         pin_memory=pin_memory,
     )
 
+    # Set up tensorboard logging.
     tensorboard_logger = ml_utils.TensorBoardLogger(True, root_dir=output_path)
+
+    # Define a trainer, which will do the training on the model.
     trainer = ml_utils.ClassificationTrainer(
         model=classifier.model,
         train_dataloader=train_dataloader,
@@ -139,10 +150,13 @@ def fit_model(
         trainable_parts=classifier.trainable_parts,
     )
 
+    # Now run the training.
     all_results = trainer.train()
 
+    # Obtain information about the model and training run.
     meta_info = dict(num_params=num_params, output_path=str(output_path))
 
+    # List of items to return. If we want to also return the classifier, add it to the list.
     ret = [all_results, meta_info]
     if return_classifier:
         ret.append(classifier)
