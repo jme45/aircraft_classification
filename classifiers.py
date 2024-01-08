@@ -11,7 +11,6 @@ from torch import nn
 from torchvision.transforms import v2 as transf_v2
 
 import aircraft_types as act
-import data_setup
 import parameters
 
 
@@ -125,7 +124,7 @@ class AircraftClassifier:
         self.train_transform_with_crop = transf_v2.Compose(
             [
                 parameters.TO_TENSOR_TRANSFORMS,
-                data_setup.CropAuthorshipInformation(),
+                parameters.CropAuthorshipInformation(),
                 parameters.DATA_AUGMENTATION_TRANSFORMS,
                 self.transforms,
             ]
@@ -133,7 +132,7 @@ class AircraftClassifier:
         self.predict_transform_with_crop = transf_v2.Compose(
             [
                 parameters.TO_TENSOR_TRANSFORMS,
-                data_setup.CropAuthorshipInformation(),
+                parameters.CropAuthorshipInformation(),
                 self.transforms,
             ]
         )
