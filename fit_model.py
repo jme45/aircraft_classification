@@ -10,7 +10,7 @@ from typing import Tuple, Any
 
 import pandas as pd
 import torch
-from ml_utils import ml_utils
+from ml_utils_jme45 import ml_utils
 from torch import nn
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
