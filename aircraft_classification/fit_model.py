@@ -15,7 +15,7 @@ from torch import nn
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 
-import classifiers
+from aircraft_classifiers_jme45 import classifiers
 import data_setup
 import parameters
 
@@ -80,7 +80,10 @@ def fit_model(
     )
 
     classifier = classifiers.AircraftClassifier(
-        model_type, aircraft_subset_name, load_classifier_pretrained_weights=False
+        model_type,
+        aircraft_subset_name,
+        load_classifier_pretrained_weights=False,
+        data_augmentation_transforms=parameters.DATA_AUGMENTATION_TRANSFORMS,
     )
 
     # Compiling is allegedly useful on more powerful GPUs.

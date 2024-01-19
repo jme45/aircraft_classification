@@ -12,8 +12,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import v2 as transf_v2
 from tqdm.auto import tqdm
 
-import aircraft_types as act
-from parameters import CropAuthorshipInformation
+from aircraft_classifiers_jme45 import aircraft_types as act
+from aircraft_classifiers_jme45.parameters import CropAuthorshipInformation
 
 # This is a simple transform, useful for testing
 simple_transf = transf_v2.Compose(
