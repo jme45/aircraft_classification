@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aircraft_classification"
+authors = [
+  { name="Jonathan Edge", email="j.edge@zoho.com" },
+]
+dynamic = ["version"]
+
+[tool]
+
+[tool.hatch.version]
+path = "src/aircraft_classification/__about__.py"

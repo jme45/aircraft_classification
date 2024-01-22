@@ -16,8 +16,8 @@ from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 
 from aircraft_classifiers_jme45 import classifiers
-import data_setup
-import parameters
+from . import data_setup
+from . import parameters
 
 
 # In colab and locally it seems that ml_utils gets installed differently.
@@ -31,7 +31,7 @@ def fit_model(
     model_type: str,
     aircraft_subset_name: str,
     n_epochs: int,
-    output_path: str | Path = Path("runs"),
+    output_path: str | Path = parameters.DEFAULT_RUNS_DIR,
     compile_model: bool = False,
     device="cpu",
     num_workers: int = 0,
@@ -95,7 +95,7 @@ def fit_model(
 
     # Set up training and validation sets.
     train_set = data_setup.get_aircraft_data_subset(
-        root="data",
+        root=parameters.DATA_ROOT_DIR,
         split="train",
         annotation_level=parameters.ANNOTATION_LEVEL,
         transform=classifier.train_transform_with_crop,
@@ -104,7 +104,7 @@ def fit_model(
         aircraft_subset_name=aircraft_subset_name,
     )
     val_set = data_setup.get_aircraft_data_subset(
-        root="data",
+        root=parameters.DATA_ROOT_DIR,
         split="val",
         annotation_level=parameters.ANNOTATION_LEVEL,
         transform=classifier.predict_transform_with_crop,

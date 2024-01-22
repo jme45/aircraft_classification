@@ -4,8 +4,8 @@ Download dataset once, so it is available.
 Useful to get the data setup on a new machine, so we don't start downloading on the first train step.
 """
 
-import data_setup
-import parameters
+from . import data_setup
+from . import parameters
 
 
 def run_downloads():
