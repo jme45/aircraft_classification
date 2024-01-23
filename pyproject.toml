@@ -15,7 +15,16 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dynamic = ["version", "dependencies"]
+dependencies= ["tqdm",
+    "torch",
+    "torchvision",
+    "torchmetrics",
+    "tensorboard",
+    "pytest",
+    "pandas",
+    "ml_utils_jme45",
+    "aircraft_classifiers_jme45"]
+dynamic = ["version", ]
 
 [project.urls]
 Homepage = "https://github.com/jme45/aircraft_classification"
