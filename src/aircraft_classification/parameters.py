@@ -16,7 +16,6 @@ root_dir = Path(__file__).parent.parent.parent
 ANNOTATION_LEVEL = "family"
 DATA_ROOT_DIR = root_dir/ "data"
 DEFAULT_RUNS_DIR = root_dir / 'runs'
-print (DATA_ROOT_DIR)
 DATA_AUGMENTATION_TRANSFORMS = transf_v2.TrivialAugmentWide()
 
 

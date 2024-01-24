@@ -23,7 +23,7 @@ dependencies= ["tqdm",
     "pytest",
     "pandas",
     "ml_utils_jme45",
-    "aircraft_classifiers_jme45"]
+    "aircraft-classifiers-jme45 @ git+https://github.com/jme45/aircraft_classifiers_jme45@main"]
 dynamic = ["version", ]
 
 [project.urls]
@@ -31,6 +31,10 @@ Homepage = "https://github.com/jme45/aircraft_classification"
 Issues = "https://github.com/jme45/aircraft_classification/issues"
 
 [tool]
+
+[tool.hatch.metadata]
+# To allow dependencies which are only on github, but not pypi.
+allow-direct-references = true
 
 [tool.hatch.version]
 path = "src/aircraft_classification/__about__.py"

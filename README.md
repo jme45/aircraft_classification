@@ -7,7 +7,7 @@ Not needed
 
 ## Usage example
 ```python
-import fit_model[aircraft_types.py](aircraft_types.py)
+from aircraft_classification import fit_model
 
 results = fit_model.fit_model('vit_b_16',
                               'CIVILIAN_JETS',
@@ -36,7 +36,7 @@ It's also possible to run the code from the command line.
 ## Approach
 This code uses transfer learning, as I wouldn't have the computational resources
 to train an entire computer vision model. It loads one of several model with
-pretrained weights, freezen the vast majority of the parameters and then merely 
+pretrained weights, freezes the vast majority of the parameters and then merely 
 trains the parameters in the final head or classifier layer.
 
 ## Models available

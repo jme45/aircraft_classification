@@ -6,4 +6,4 @@ tensorboard
 pytest
 pandas
 ml_utils_jme45
-aircraft_classifiers_jme45
+aircraft_classifiers_jme45 @ git+https://github.com/jme45/aircraft_classifiers_jme45@main
