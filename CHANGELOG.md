@@ -2,6 +2,9 @@
 
 ## [Unversioned]
 
+## [0.3.0] - 2024-01-29
+- Using aircraft_classification_jme45 as a pypi package.g s
+
 ## [0.2.0] - 2024-01-24
 - refactored code to factor out classifiers to aircraft_classifiers_jme45
 - aircraft_classifiers_jme45 is no longer available on pypi, so installed from github
