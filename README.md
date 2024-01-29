@@ -3,7 +3,7 @@
 > Based on FGVCA aircraft data (see https://arxiv.org/pdf/1306.5151.pdf), though this code allows one to use a subset
 
 ## Installation
-Not needed
+pip install -q git+https://github.com/jme45/aircraft_classification.git
 
 ## Usage example
 ```python
